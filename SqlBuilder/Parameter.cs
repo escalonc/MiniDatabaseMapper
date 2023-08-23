@@ -1,8 +1,10 @@
-class Parameter
+namespace SqlBuilder;
+
+internal class Parameter
 {
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
-    public Type Type { get; set; }
+    public required Type Type { get; set; }
 
-    public object Value { get; set; }
+    public required object Value { get; set; }
 }
