@@ -4,6 +4,8 @@ namespace SqlBuilder;
 
 public class SqlExpressionVisitor : ExpressionVisitor
 {
+    private TypeFormatter _typeFormatter = new TypeFormatter();
+
     private string _sql = "";
 
     public string Translate(Expression expression)
@@ -57,13 +59,7 @@ public class SqlExpressionVisitor : ExpressionVisitor
     protected override Expression VisitConstant(ConstantExpression node)
     {
         // Check types
-        if (node.Type == typeof(string))
-        {
-            _sql += $"'{node.Value}'";
-            return node;
-        }
-
-        _sql += node.Value?.ToString();
+        _sql += TypeFormatter.Format(node.Value);
         return node;
     }
 }
