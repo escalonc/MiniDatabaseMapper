@@ -11,17 +11,15 @@ namespace SqlBuilder
         private readonly string _tableName;
         private readonly SqlExpressionVisitor _sqlVisitor;
         private readonly PropertyInfo[] _properties;
-        private readonly Type _type;
 
         public Table(IDbConnection connection)
         {
             _connection = connection;
             _tableName = typeof(TEntity).Name;
             _sqlVisitor = new SqlExpressionVisitor();
-            _type = typeof(TEntity);
-            _properties = _type.GetProperties();
+            _properties = typeof(TEntity).GetProperties();
         }
-        
+
         public void Create(TEntity entity)
         {
             var parameters = (from property in _properties
@@ -31,7 +29,7 @@ namespace SqlBuilder
                 .ToList();
 
 
-            var values = string.Join(", ", parameters.Select(p => (string)TypeFormatter.Format(p.Value)));
+            var values = string.Join(", ", parameters.Select(p => TypeFormatter.Format(p.Type, p.Value)));
 
             var sql = $"INSERT INTO {_tableName} VALUES ({values})";
             ExecuteCommand(sql);
@@ -50,7 +48,7 @@ namespace SqlBuilder
             var sql = $"SELECT * FROM {_tableName} WHERE {whereSql}";
 
             var reader = ExecuteReader(sql);
-            
+
             var entities = new List<TEntity>();
 
             while (reader.Read())

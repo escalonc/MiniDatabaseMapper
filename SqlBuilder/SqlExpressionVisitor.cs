@@ -4,17 +4,15 @@ namespace SqlBuilder;
 
 public class SqlExpressionVisitor : ExpressionVisitor
 {
-    private TypeFormatter _typeFormatter = new TypeFormatter();
+    private string? _sql = "";
 
-    private string _sql = "";
-
-    public string Translate(Expression expression)
+    public string? Translate(Expression expression)
     {
         Visit(expression);
         return _sql;
     }
 
-    private readonly IDictionary<ExpressionType, string> _symbolsTable = new Dictionary<ExpressionType, string>()
+    private readonly IDictionary<ExpressionType, string?> _symbolsTable = new Dictionary<ExpressionType, string?>()
     {
         { ExpressionType.And, " AND " },
         { ExpressionType.AndAlso, " AND " },
@@ -59,7 +57,7 @@ public class SqlExpressionVisitor : ExpressionVisitor
     protected override Expression VisitConstant(ConstantExpression node)
     {
         // Check types
-        _sql += TypeFormatter.Format(node.Value);
+        _sql += TypeFormatter.Format(node.Type, node.Value);
         return node;
     }
 }
