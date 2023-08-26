@@ -11,15 +11,17 @@ namespace SqlBuilder
         private readonly string _tableName;
         private readonly SqlExpressionVisitor _sqlVisitor;
         private readonly PropertyInfo[] _properties;
+        private readonly Type _type;
 
         public Table(IDbConnection connection)
         {
             _connection = connection;
             _tableName = typeof(TEntity).Name;
             _sqlVisitor = new SqlExpressionVisitor();
-            _properties = typeof(TEntity).GetProperties();
+            _type = typeof(TEntity);
+            _properties = _type.GetProperties();
         }
-
+        
         public void Create(TEntity entity)
         {
             var parameters = (from property in _properties
@@ -46,28 +48,46 @@ namespace SqlBuilder
         {
             var whereSql = _sqlVisitor.Translate(predicate.Body);
             var sql = $"SELECT * FROM {_tableName} WHERE {whereSql}";
+
+            var reader = ExecuteReader(sql);
             
-            using var command = _connection.CreateCommand();
-            command.CommandText = sql;
-            var reader = command.ExecuteReader();
-
-            var data = Activator.CreateInstance(typeof(TEntity));
-
-            var entity = new TEntity();
+            var entities = new List<TEntity>();
 
             while (reader.Read())
             {
-                
+                var entity = new TEntity();
+
+                foreach (var property in _properties)
+                {
+                    if (property.PropertyType == typeof(int))
+                    {
+                        property.SetValue(entity, Convert.ToInt32(reader[property.Name]));
+                        continue;
+                    }
+
+                    property.SetValue(entity, reader[property.Name]);
+                }
+
+                entities.Add(entity);
             }
-            
-            return new List<TEntity>();
+
+            return entities;
         }
 
         private void ExecuteCommand(string sql)
         {
             using var command = _connection.CreateCommand();
             command.CommandText = sql;
+            Console.WriteLine($"Generated sql: {sql}");
             command.ExecuteNonQuery();
+        }
+
+        private IDataReader ExecuteReader(string sql)
+        {
+            using var command = _connection.CreateCommand();
+            command.CommandText = sql;
+            Console.WriteLine($"Generated sql: {sql}");
+            return command.ExecuteReader();
         }
     }
 }
