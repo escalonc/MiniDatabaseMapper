@@ -31,7 +31,7 @@ namespace SqlBuilder
                 .ToList();
 
 
-            var values = string.Join(", ", parameters.Select(p => p.Type == typeof(string) ? $"'{p.Value}'" : p.Value));
+            var values = string.Join(", ", parameters.Select(p => (string)TypeFormatter.Format(p.Value)));
 
             var sql = $"INSERT INTO {_tableName} VALUES ({values})";
             ExecuteCommand(sql);
