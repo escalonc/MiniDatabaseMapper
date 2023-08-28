@@ -9,12 +9,7 @@ public static class TypeFormatter
             return "NULL";
         }
 
-        if (type == typeof(string))
-        {
-            return $"'{value}'";
-        }
-
-        if (type == typeof(float) || type == typeof(int))
+        if (type == typeof(float) || type == typeof(int) || type == typeof(string))
         {
             return value?.ToString() ?? string.Empty;
         }

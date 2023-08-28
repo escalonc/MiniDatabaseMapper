@@ -1,18 +1,20 @@
 using System.Linq.Expressions;
+using Microsoft.Data.Sqlite;
 
 namespace SqlBuilder;
 
 public class SqlExpressionVisitor : ExpressionVisitor
 {
-    private string? _sql = "";
+    private string _whereClause = "";
+    private readonly IList<SqliteParameter> _sqlParameters = new List<SqliteParameter>();
 
-    public string? Translate(Expression expression)
+    public (string whereClause, IList<SqliteParameter> sqliteParameters) Translate(Expression expression)
     {
         Visit(expression);
-        return _sql;
+        return (_whereClause, _sqlParameters);
     }
 
-    private readonly IDictionary<ExpressionType, string?> _symbolsTable = new Dictionary<ExpressionType, string?>()
+    private readonly IDictionary<ExpressionType, string> _symbolsTable = new Dictionary<ExpressionType, string>()
     {
         { ExpressionType.And, " AND " },
         { ExpressionType.AndAlso, " AND " },
@@ -33,10 +35,10 @@ public class SqlExpressionVisitor : ExpressionVisitor
 
         if (!_symbolsTable.ContainsKey(node.NodeType))
         {
-            throw new NotSupportedException($"Operator {node.NodeType.ToString()} it's not supported");
+            throw new NotSupportedException($"Operator {node.NodeType.ToString()} not supported");
         }
 
-        _sql += _symbolsTable[node.NodeType];
+        _whereClause += _symbolsTable[node.NodeType];
 
         Visit(node.Right);
 
@@ -47,8 +49,8 @@ public class SqlExpressionVisitor : ExpressionVisitor
     {
         if (node.Expression is ParameterExpression)
         {
-            // Check columns names
-            _sql += node.Member.Name;
+            // TODO: Check columns names
+            _whereClause += node.Member.Name;
         }
 
         return node;
@@ -56,8 +58,11 @@ public class SqlExpressionVisitor : ExpressionVisitor
 
     protected override Expression VisitConstant(ConstantExpression node)
     {
-        // Check types
-        _sql += TypeFormatter.Format(node.Type, node.Value);
+        // TODO: Check types
+        var parameterName = $"$param{_sqlParameters.Count}";
+        var parameterValue = TypeFormatter.Format(node.Type, node.Value);
+        _sqlParameters.Add(new SqliteParameter(parameterName, parameterValue));
+        _whereClause += parameterName;
         return node;
     }
 }

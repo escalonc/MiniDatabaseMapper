@@ -5,7 +5,7 @@ namespace SqlBuilder
 {
     public class SqlConnectionFactory
     {
-        private readonly IDbConnection _connection;
+        private readonly SqliteConnection _connection;
 
         public SqlConnectionFactory(string connectionString)
         {
@@ -13,6 +13,6 @@ namespace SqlBuilder
             _connection.Open();
         }
 
-        public IDbConnection GetConnection() => _connection;
+        public SqliteConnection GetConnection() => _connection;
     }
 }

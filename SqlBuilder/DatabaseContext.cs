@@ -1,10 +1,11 @@
 using System.Data;
+using Microsoft.Data.Sqlite;
 
 namespace SqlBuilder
 {
     public class DatabaseContext
     {
-        protected readonly IDbConnection Connection;
+        protected readonly SqliteConnection Connection;
 
         protected DatabaseContext(string connectionString)
         {
