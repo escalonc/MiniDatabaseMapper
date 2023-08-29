@@ -5,11 +5,11 @@ namespace SqlBuilder
 {
     public class DatabaseContext
     {
-        protected readonly SqliteConnection Connection;
+        protected readonly string ConnectionString;
 
         protected DatabaseContext(string connectionString)
         {
-            Connection = new SqlConnectionFactory(connectionString).GetConnection();
+            ConnectionString = connectionString;
         }
     }
 }

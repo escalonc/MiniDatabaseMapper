@@ -8,19 +8,20 @@ namespace SqlBuilder
     public class Table<TEntity>
         where TEntity : ISqlTable, new()
     {
-        private readonly SqliteConnection _connection;
+        private readonly string _connectionString;
         private readonly string _tableName;
         private readonly PropertyInfo[] _properties;
 
-        public Table(SqliteConnection connection)
+        public Table(string connectionString)
         {
-            _connection = connection;
             _tableName = typeof(TEntity).Name;
             _properties = typeof(TEntity).GetProperties();
+            _connectionString = connectionString;
         }
 
         public void Create(TEntity entity)
         {
+            using var connection = new SqlConnectionFactory(_connectionString).GetConnection();
             var parameters = _properties
                 .Select(p => new { FieldName = p.Name, Type = p.PropertyType, Value = p.GetValue(entity, null) })
                 .Where(p => p.Value is not null)
@@ -43,23 +44,24 @@ namespace SqlBuilder
 
         public void Delete(Expression<Func<TEntity, bool>> predicate)
         {
+            using var connection = new SqlConnectionFactory(_connectionString).GetConnection();
             var sqlVisitor = new SqlExpressionVisitor();
             var result = sqlVisitor.Translate(predicate.Body);
             var sql = $"DELETE FROM {_tableName} WHERE {result.whereClause}";
             ExecuteCommand(sql, result.sqliteParameters);
         }
 
-        public IList<TEntity> Find(Expression<Func<TEntity, bool>> predicate)
+        public IEnumerable<TEntity> Find(Expression<Func<TEntity, bool>> predicate)
         {
             var sqlVisitor = new SqlExpressionVisitor();
             var result = sqlVisitor.Translate(predicate.Body);
             var sql = $"SELECT * FROM {_tableName} WHERE {result.whereClause}";
 
-            using var reader = ExecuteReader(sql, result.sqliteParameters);
+            var records = ExecuteReader(sql, result.sqliteParameters);
 
             var entities = new List<TEntity>();
 
-            while (reader.Read())
+            foreach (var record in records)
             {
                 var entity = new TEntity();
 
@@ -68,11 +70,11 @@ namespace SqlBuilder
                     // TODO: change with type converter function
                     if (property.PropertyType == typeof(int))
                     {
-                        property.SetValue(entity, Convert.ToInt32(reader[property.Name]));
+                        property.SetValue(entity, Convert.ToInt32(record[property.Name]));
                         continue;
                     }
 
-                    property.SetValue(entity, reader[property.Name]);
+                    property.SetValue(entity, record[property.Name]);
                 }
 
                 entities.Add(entity);
@@ -83,6 +85,8 @@ namespace SqlBuilder
 
         public void Update(object entityUpdate, Expression<Func<TEntity, bool>> predicate)
         {
+            using var connection = new SqlConnectionFactory(_connectionString).GetConnection();
+
             var updateProperties = entityUpdate.GetType().GetProperties();
             var updatePropertyNames = updateProperties.Select(p => p.Name);
             var entityPropertyNames = _properties.Select(p => p.Name);
@@ -113,35 +117,41 @@ namespace SqlBuilder
 
             var fields = string.Join(", ", parameters.Select(p => $"{p.FieldName} = {p.Name}"));
 
-            var sql = $"UPDATE SET {fields} WHERE {result.whereClause}";
+            var sql = $"UPDATE {_tableName} SET {fields} WHERE {result.whereClause}";
 
-            ExecuteReader(sql, sqlParameters);
+            ExecuteCommand(sql, sqlParameters);
         }
 
 
         private void ExecuteCommand(string sql, IList<SqliteParameter> parameters)
         {
-            using var command = _connection.CreateCommand();
-            command.CommandText = sql;
-            command.Parameters.AddRange(parameters);
+            using var connection = new SqlConnectionFactory(_connectionString).GetConnection();
             Console.WriteLine($"Generated sql: {sql}");
             Console.WriteLine(
                 $"Parameters: {string.Join(", ", parameters.Select(p => $"{p.ParameterName}: {p.Value}").ToList())}"
             );
-
+            using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.AddRange(parameters);
             command.ExecuteNonQuery();
         }
 
-        private IDataReader ExecuteReader(string sql, IList<SqliteParameter> parameters)
+        private IEnumerable<IDataRecord> ExecuteReader(string sql, IList<SqliteParameter> parameters)
         {
+            using var connection = new SqlConnectionFactory(_connectionString).GetConnection();
             Console.WriteLine($"Generated sql: {sql}");
             Console.WriteLine(
                 $"Parameters: {string.Join(", ", parameters.Select(p => $"{p.ParameterName}: {p.Value}").ToList())}"
             );
-            using var command = _connection.CreateCommand();
+            using var command = connection.CreateCommand();
             command.CommandText = sql;
             command.Parameters.AddRange(parameters);
-            return command.ExecuteReader(CommandBehavior.CloseConnection);
+            var reader = command.ExecuteReader(CommandBehavior.CloseConnection);
+
+            while (reader.Read())
+            {
+                yield return reader;
+            }
         }
     }
 }
