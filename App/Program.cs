@@ -3,13 +3,19 @@
 
 var db = new Database();
 
-// db.Toys.Create(new Toy { Name = "test4", Price = 444 });
-// db.Toys.Delete(x => x.Id == 0);
-// var toys = db.Toys.Find(x => x.Id == 0);
+db.Initialize();
 
-// db.Toys.Update(new
+// db.Toys.Create(new Toy { Name = "Osito", Price = 444 });
+db.Toys.Delete(x => x.Price == 600);
+var toys = db.Toys.Find(x => x.Id == 0);
+
+// foreach (var toy in toys)
 // {
-//     Name = "test4",
-//     Price = 500
-// }, t => t.Id == 0);
+//     Console.WriteLine($"Name: {toy.Name}, Price{toy.Price}");
+// }
+//
+db.Toys.Update(new
+{
+    Price = 600
+}, t => t.Price == 500);
 Console.WriteLine("Hello, World!");

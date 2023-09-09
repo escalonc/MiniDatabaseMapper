@@ -21,7 +21,6 @@ namespace SqlBuilder
 
         public void Create(TEntity entity)
         {
-            using var connection = new SqlConnectionFactory(_connectionString).GetConnection();
             var parameters = _properties
                 .Select(p => new { FieldName = p.Name, Type = p.PropertyType, Value = p.GetValue(entity, null) })
                 .Where(p => p.Value is not null)
@@ -44,7 +43,6 @@ namespace SqlBuilder
 
         public void Delete(Expression<Func<TEntity, bool>> predicate)
         {
-            using var connection = new SqlConnectionFactory(_connectionString).GetConnection();
             var sqlVisitor = new SqlExpressionVisitor();
             var result = sqlVisitor.Translate(predicate.Body);
             var sql = $"DELETE FROM {_tableName} WHERE {result.whereClause}";
@@ -85,8 +83,6 @@ namespace SqlBuilder
 
         public void Update(object entityUpdate, Expression<Func<TEntity, bool>> predicate)
         {
-            using var connection = new SqlConnectionFactory(_connectionString).GetConnection();
-
             var updateProperties = entityUpdate.GetType().GetProperties();
             var updatePropertyNames = updateProperties.Select(p => p.Name);
             var entityPropertyNames = _properties.Select(p => p.Name);
