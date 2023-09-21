@@ -18,7 +18,7 @@ namespace SqlBuilder
                 return "NULL";
             }
 
-            if (type == typeof(float) || type == typeof(int) || type == typeof(string))
+            if (type == typeof(float) || type == typeof(int) || type == typeof(string) || type == typeof(decimal) || type == typeof(bool))
             {
                 return value?.ToString() ?? string.Empty;
             }

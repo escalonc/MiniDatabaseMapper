@@ -68,7 +68,6 @@ namespace SqlBuilder
         {
             if (node.Expression is ParameterExpression)
             {
-                // TODO: Verificar nombres de columnas
                 _whereClause += node.Member.Name;
             }
 
@@ -80,7 +79,6 @@ namespace SqlBuilder
         /// </summary>
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            // TODO: Verificar tipos
             var parameterName = $"$param{_sqlParameters.Count}";
             var parameterValue = TypeFormatter.Format(node.Type, node.Value);
             _sqlParameters.Add(new SqliteParameter(parameterName, parameterValue));

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.Data.Sqlite;
@@ -88,10 +89,47 @@ namespace SqlBuilder
 
                 foreach (var property in _properties)
                 {
-                    // TODO: change with type converter function
+
+                    var value = record[property.Name].ToString();
+
+                    if (value == null)
+                    {
+                        continue;
+                    }
+                    
                     if (property.PropertyType == typeof(int))
                     {
-                        property.SetValue(entity, Convert.ToInt32(record[property.Name]));
+                        property.SetValue(entity, Convert.ToInt32(value));
+                        continue;
+                    }
+                    
+                    if (property.PropertyType == typeof(decimal))
+                    {
+                        property.SetValue(entity, Convert.ToDecimal(value));
+                        continue;
+                    }
+                    
+                    if (property.PropertyType == typeof(float))
+                    {
+                        property.SetValue(entity, Convert.ToSingle(value));
+                        continue;
+                    }
+                    
+                    if (property.PropertyType == typeof(double))
+                    {
+                        property.SetValue(entity, Convert.ToDouble(value));
+                        continue;
+                    }
+                    
+                    if (property.PropertyType == typeof(DateTime))
+                    {
+                        property.SetValue(entity, DateTime.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.None));
+                        continue;
+                    }
+                    
+                    if (property.PropertyType == typeof(bool))
+                    {
+                        property.SetValue(entity, Convert.ToBoolean(value));
                         continue;
                     }
 

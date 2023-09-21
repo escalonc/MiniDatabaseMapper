@@ -44,6 +44,7 @@ namespace SqlBuilder
 
                 // Concatena los campos con la instrucción CREATE TABLE
                 var createTableSql = $"CREATE TABLE IF NOT EXISTS {tableName} ({string.Join(", ", columns)});";
+                Console.WriteLine(createTableSql);
                 // Ejecuta la consulta
                 using var command = new SqliteCommand(createTableSql, connection);
                 command.ExecuteNonQuery();
@@ -72,9 +73,19 @@ namespace SqlBuilder
                 return "NUMERIC";
             }
 
+            if (propertyType == typeof(float) || propertyType == typeof(double))
+            {
+                return "REAL";
+            }
+
             if (propertyType == typeof(bool))
             {
                 return "BOOLEAN";
+            }
+            
+            if (propertyType == typeof(DateTime))
+            {
+                return "TEXT";
             }
 
             throw new ArgumentException($"Tipo de propiedad no admitido: {propertyType.Name}");

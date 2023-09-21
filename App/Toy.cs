@@ -20,6 +20,16 @@ namespace App
         /// <summary>
         /// Obtiene o establece el precio del juguete.
         /// </summary>
-        public int Price { get; set; }
+        public decimal Price { get; set; }
+        
+        /// <summary>
+        /// Obtiene o establece la fecha de creación.
+        /// </summary>
+        public DateTime CreatedDate { get; set; }
+
+        /// <summary>
+        /// Obtiene o establece si esta activo.
+        /// </summary>
+        public bool IsActive { get; set; }
     }
 }
