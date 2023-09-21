@@ -1,68 +1,91 @@
 using System.Linq.Expressions;
 using Microsoft.Data.Sqlite;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 
-namespace SqlBuilder;
-
-public class SqlExpressionVisitor : ExpressionVisitor
+namespace SqlBuilder
 {
-    private string _whereClause = "";
-    private readonly IList<SqliteParameter> _sqlParameters = new List<SqliteParameter>();
-
-    public (string whereClause, IList<SqliteParameter> sqliteParameters) Translate(Expression expression)
+    /// <summary>
+    /// Un visitante de expresiones que traduce una expresión LINQ en una cláusula WHERE SQL y parámetros SQLite.
+    /// </summary>
+    public class SqlExpressionVisitor : ExpressionVisitor
     {
-        Visit(expression);
-        return (_whereClause, _sqlParameters);
-    }
+        private string _whereClause = "";
+        private readonly IList<SqliteParameter> _sqlParameters = new List<SqliteParameter>();
 
-    private readonly IDictionary<ExpressionType, string> _symbolsTable = new Dictionary<ExpressionType, string>()
-    {
-        { ExpressionType.And, " AND " },
-        { ExpressionType.AndAlso, " AND " },
-        { ExpressionType.Or, " OR " },
-        { ExpressionType.OrElse, " OR " },
-        { ExpressionType.Equal, " = " },
-        { ExpressionType.GreaterThan, " > " },
-        { ExpressionType.LessThan, " < " },
-        { ExpressionType.GreaterThanOrEqual, " >= " },
-        { ExpressionType.LessThanOrEqual, " <= " },
-        { ExpressionType.Not, " NOT " },
-        { ExpressionType.NotEqual, " <> " },
-    };
-
-    protected override Expression VisitBinary(BinaryExpression node)
-    {
-        Visit(node.Left);
-
-        if (!_symbolsTable.ContainsKey(node.NodeType))
+        /// <summary>
+        /// Traduce una expresión LINQ en una cláusula WHERE SQL y parámetros SQLite.
+        /// </summary>
+        /// <param name="expression">La expresión LINQ a traducir.</param>
+        /// <returns>
+        /// Una tupla que contiene la cláusula WHERE SQL y una lista de parámetros SQLite.
+        /// </returns>
+        public (string whereClause, IList<SqliteParameter> sqliteParameters) Translate(Expression expression)
         {
-            throw new NotSupportedException($"Operator {node.NodeType.ToString()} not supported");
+            Visit(expression);
+            return (_whereClause, _sqlParameters);
         }
 
-        _whereClause += _symbolsTable[node.NodeType];
-
-        Visit(node.Right);
-
-        return node;
-    }
-
-    protected override Expression VisitMember(MemberExpression node)
-    {
-        if (node.Expression is ParameterExpression)
+        private readonly IDictionary<ExpressionType, string> _symbolsTable = new Dictionary<ExpressionType, string>()
         {
-            // TODO: Check columns names
-            _whereClause += node.Member.Name;
+            { ExpressionType.And, " AND " },
+            { ExpressionType.AndAlso, " AND " },
+            { ExpressionType.Or, " OR " },
+            { ExpressionType.OrElse, " OR " },
+            { ExpressionType.Equal, " = " },
+            { ExpressionType.GreaterThan, " > " },
+            { ExpressionType.LessThan, " < " },
+            { ExpressionType.GreaterThanOrEqual, " >= " },
+            { ExpressionType.LessThanOrEqual, " <= " },
+            { ExpressionType.Not, " NOT " },
+            { ExpressionType.NotEqual, " <> " },
+        };
+
+        /// <summary>
+        /// Visita un nodo binario de una expresión.
+        /// </summary>
+        protected override Expression VisitBinary(BinaryExpression node)
+        {
+            Visit(node.Left);
+
+            if (!_symbolsTable.ContainsKey(node.NodeType))
+            {
+                throw new NotSupportedException($"Operador {node.NodeType.ToString()} no es compatible");
+            }
+
+            _whereClause += _symbolsTable[node.NodeType];
+
+            Visit(node.Right);
+
+            return node;
         }
 
-        return node;
-    }
+        /// <summary>
+        /// Visita un nodo de miembro (MemberExpression) de una expresión.
+        /// </summary>
+        protected override Expression VisitMember(MemberExpression node)
+        {
+            if (node.Expression is ParameterExpression)
+            {
+                // TODO: Verificar nombres de columnas
+                _whereClause += node.Member.Name;
+            }
 
-    protected override Expression VisitConstant(ConstantExpression node)
-    {
-        // TODO: Check types
-        var parameterName = $"$param{_sqlParameters.Count}";
-        var parameterValue = TypeFormatter.Format(node.Type, node.Value);
-        _sqlParameters.Add(new SqliteParameter(parameterName, parameterValue));
-        _whereClause += parameterName;
-        return node;
+            return node;
+        }
+
+        /// <summary>
+        /// Visita un nodo constante (ConstantExpression) de una expresión.
+        /// </summary>
+        protected override Expression VisitConstant(ConstantExpression node)
+        {
+            // TODO: Verificar tipos
+            var parameterName = $"$param{_sqlParameters.Count}";
+            var parameterValue = TypeFormatter.Format(node.Type, node.Value);
+            _sqlParameters.Add(new SqliteParameter(parameterName, parameterValue));
+            _whereClause += parameterName;
+            return node;
+        }
     }
 }

@@ -1,25 +1,35 @@
-namespace SqlBuilder;
-
-public static class TypeFormatter
+namespace SqlBuilder
 {
-    public static string Format(Type type, object? value)
+    /// <summary>
+    /// Proporciona métodos para formatear valores de diferentes tipos en representaciones de cadena para su uso en consultas SQL.
+    /// </summary>
+    public static class TypeFormatter
     {
-        if (value == null)
+        /// <summary>
+        /// Formatea un valor de un tipo específico en una representación de cadena adecuada para su uso en consultas SQL.
+        /// </summary>
+        /// <param name="type">El tipo de datos del valor.</param>
+        /// <param name="value">El valor que se formateará como cadena.</param>
+        /// <returns>Una representación de cadena formateada del valor.</returns>
+        public static string Format(Type type, object? value)
         {
-            return "NULL";
-        }
+            if (value == null)
+            {
+                return "NULL";
+            }
 
-        if (type == typeof(float) || type == typeof(int) || type == typeof(string))
-        {
-            return value?.ToString() ?? string.Empty;
-        }
+            if (type == typeof(float) || type == typeof(int) || type == typeof(string))
+            {
+                return value?.ToString() ?? string.Empty;
+            }
 
-        if (type == typeof(DateTime))
-        {
-            var dateTimeValue = (DateTime)value;
-            return dateTimeValue.ToString("o");
-        }
+            if (type == typeof(DateTime))
+            {
+                var dateTimeValue = (DateTime)value;
+                return dateTimeValue.ToString("o");
+            }
 
-        throw new NotSupportedException($"Type {type} is not supported");
+            throw new NotSupportedException($"El tipo {type} no es compatible");
+        }
     }
 }

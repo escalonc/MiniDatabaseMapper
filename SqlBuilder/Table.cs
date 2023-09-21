@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -5,6 +7,10 @@ using Microsoft.Data.Sqlite;
 
 namespace SqlBuilder
 {
+    /// <summary>
+    /// Representa una tabla en una base de datos SQLite y proporciona métodos para operar en ella.
+    /// </summary>
+    /// <typeparam name="TEntity">El tipo de entidad que se asocia a la tabla.</typeparam>
     public class Table<TEntity>
         where TEntity : ISqlTable, new()
     {
@@ -12,6 +18,10 @@ namespace SqlBuilder
         private readonly string _tableName;
         private readonly PropertyInfo[] _properties;
 
+        /// <summary>
+        /// Inicializa una nueva instancia de la clase Table con la cadena de conexión especificada.
+        /// </summary>
+        /// <param name="connectionString">La cadena de conexión a la base de datos SQLite.</param>
         public Table(string connectionString)
         {
             _tableName = typeof(TEntity).Name;
@@ -19,6 +29,10 @@ namespace SqlBuilder
             _connectionString = connectionString;
         }
 
+        /// <summary>
+        /// Crea un nuevo registro en la tabla utilizando la entidad especificada.
+        /// </summary>
+        /// <param name="entity">La entidad que se va a agregar a la tabla.</param>
         public void Create(TEntity entity)
         {
             var parameters = _properties
@@ -41,6 +55,10 @@ namespace SqlBuilder
             ExecuteCommand(sql, sqlParameters);
         }
 
+        /// <summary>
+        /// Elimina registros de la tabla que cumplan con un predicado especificado.
+        /// </summary>
+        /// <param name="predicate">El predicado que define qué registros se eliminarán.</param>
         public void Delete(Expression<Func<TEntity, bool>> predicate)
         {
             var sqlVisitor = new SqlExpressionVisitor();
@@ -49,6 +67,11 @@ namespace SqlBuilder
             ExecuteCommand(sql, result.sqliteParameters);
         }
 
+        /// <summary>
+        /// Busca y recupera registros de la tabla que cumplan con un predicado especificado.
+        /// </summary>
+        /// <param name="predicate">El predicado que define qué registros se buscarán y recuperarán.</param>
+        /// <returns>Una colección de entidades que cumplen con el predicado.</returns>
         public IEnumerable<TEntity> Find(Expression<Func<TEntity, bool>> predicate)
         {
             var sqlVisitor = new SqlExpressionVisitor();
@@ -81,7 +104,12 @@ namespace SqlBuilder
             return entities;
         }
 
-        public void Update(object entityUpdate, Expression<Func<TEntity, bool>> predicate)
+        /// <summary>
+        /// Actualiza registros en la tabla que cumplan con un predicado especificado utilizando los datos de una entidad de actualización.
+        /// </summary>
+        /// <param name="entityUpdate">La entidad que contiene los datos de actualización.</param>
+        /// <param name="predicate">El predicado que define qué registros se actualizarán.</param>
+        public void  Update(object entityUpdate, Expression<Func<TEntity, bool>> predicate)
         {
             var updateProperties = entityUpdate.GetType().GetProperties();
             var updatePropertyNames = updateProperties.Select(p => p.Name);
@@ -119,6 +147,11 @@ namespace SqlBuilder
         }
 
 
+        /// <summary>
+        /// Ejecuta una instrucción SQL en la base de datos utilizando parámetros.
+        /// </summary>
+        /// <param name="sql">La instrucción SQL a ejecutar.</param>
+        /// <param name="parameters">Los parámetros de la instrucción SQL.</param>
         private void ExecuteCommand(string sql, IList<SqliteParameter> parameters)
         {
             using var connection = new SqlConnectionFactory(_connectionString).GetConnection();
@@ -132,6 +165,12 @@ namespace SqlBuilder
             command.ExecuteNonQuery();
         }
 
+        /// <summary>
+        /// Ejecuta una consulta SQL en la base de datos utilizando parámetros y devuelve un conjunto de resultados.
+        /// </summary>
+        /// <param name="sql">La consulta SQL a ejecutar.</param>
+        /// <param name="parameters">Los parámetros de la consulta SQL.</param>
+        /// <returns>Una colección de registros de datos resultantes.</returns>
         private IEnumerable<IDataRecord> ExecuteReader(string sql, IList<SqliteParameter> parameters)
         {
             using var connection = new SqlConnectionFactory(_connectionString).GetConnection();
